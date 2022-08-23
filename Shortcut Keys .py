@@ -12,3 +12,17 @@
 # shift + alt + uparrow - copy line down
 # ctlr + d - select multi Line
 #ctrl + alt + Uparrow - select and edit multiline
+
+# kashiapara
+# draft map
+# discoverprofile.com
+# earnbly.com
+# comidoc.net
+# text and handrwring
+# juustin odisha
+# juustin BackgroundBrowser
+# cinecom.net
+# getblend.com
+# hackerstop.or
+# fluttercookbook
+# kaggle
