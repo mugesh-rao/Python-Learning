@@ -1,4 +1,3 @@
-
 stud_score = {
     "Vijay" : 81,
     "Mugesh" : 78,
