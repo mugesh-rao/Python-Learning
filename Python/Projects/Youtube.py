@@ -1,10 +1,7 @@
 from tkinter import *
 from pytube import YouTube
 
-#Tk() used to initialize tkinter to create display window
-#geometry() used to set the window’s width and height
-#resizable(0,0) set the fix size of window
-#title() used to give the title of window
+
 
 root = Tk()
 root.geometry('500x500')
