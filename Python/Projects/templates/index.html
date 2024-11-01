@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <script src="https://cdn.tailwindcss.com"></script> <!-- Tailwind CDN for styling -->
+    <style>
+        /* Confetti animation for winning */
+        @keyframes confetti {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(100px); opacity: 0; }
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #4CAF50;
+            animation: confetti 1s ease-out forwards;
+        }
+        /* Shake animation for losing */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.3s ease-in-out 2;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen relative">
+
+    <!-- Game Container -->
+    <div id="game-container" class="bg-white p-8 rounded-lg shadow-md max-w-lg w-full text-center transition duration-300">
+        <h1 class="text-3xl font-bold mb-4 text-gray-800">Hangman Game</h1>
+        
+        <!-- Word Display -->
+        <p class="text-xl mb-2">
+            Word: <span id="word-display" class="font-mono text-2xl tracking-wider">_ _ _ _ _</span>
+        </p>
+        
+        <!-- Attempts Left -->
+        <p class="text-lg mb-4">
+            Attempts Left: <span id="attempts-left" class="font-semibold text-red-500">7</span>
+        </p>
+        
+        <!-- Game Status -->
+        <p class="text-lg mb-4">
+            Status: <span id="game-status" class="font-semibold text-blue-500">Ongoing</span>
+        </p>
+
+        <!-- Guess Input and Buttons -->
+        <div class="mb-6 flex items-center justify-center gap-2">
+            <input type="text" id="guess-input" maxlength="1" placeholder="Enter a letter" 
+                   class="w-12 h-12 border border-gray-300 rounded text-center text-2xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="makeGuess()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Guess
+            </button>
+            <button onclick="startNewGame()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">
+                New Game
+            </button>
+        </div>
+
+        <!-- Messages -->
+        <p id="message" class="text-red-500 text-sm hidden"></p>
+    </div>
+
+    <!-- Confetti Container -->
+    <div id="confetti-container" class="absolute inset-0 pointer-events-none"></div>
+
+    <!-- JavaScript -->
+    <script>
+        async function startNewGame() {
+            const response = await fetch('/new_game', { method: 'POST' });
+            const data = await response.json();
+            document.getElementById('word-display').innerText = data.word_display;
+            document.getElementById('attempts-left').innerText = data.attempts_left;
+            document.getElementById('game-status').innerText = "Ongoing";
+            document.getElementById('game-status').classList.remove("text-green-500", "text-red-500");
+            document.getElementById('game-status').classList.add("text-blue-500");
+            document.getElementById('message').classList.add('hidden'); // Hide error messages
+            document.getElementById('confetti-container').innerHTML = ''; // Clear confetti
+            document.getElementById('game-container').classList.remove('shake'); // Remove shake effect
+        }
+
+        function createConfetti() {
+            const confettiContainer = document.getElementById('confetti-container');
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDuration = Math.random() * 2 + 1 + 's';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`; // Random colors
+                confettiContainer.appendChild(confetti);
+            }
+        }
+
+        async function makeGuess() {
+            const letter = document.getElementById('guess-input').value;
+            if (letter) {
+                const response = await fetch('/guess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ letter })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    const message = document.getElementById('message');
+                    message.innerText = data.error;
+                    message.classList.remove('hidden'); // Show error message
+                } else {
+                    document.getElementById('word-display').innerText = data.word_display;
+                    document.getElementById('attempts-left').innerText = data.attempts_left;
+                    document.getElementById('game-status').innerText = data.game_status;
+
+                    // Check game status and apply effects
+                    if (data.game_status === "win") {
+                        document.getElementById('game-status').classList.replace("text-blue-500", "text-green-500");
+                        createConfetti(); // Trigger confetti effect
+                    } else if (data.game_status === "lose") {
+                        document.getElementById('game-status').classList.replace("text-blue-500", "text-red-500");
+                        document.getElementById('game-container').classList.add('shake'); // Trigger shake effect
+                    }
+                }
+                document.getElementById('guess-input').value = ''; // Clear input
+            }
+        }
+
+        // Start the game on page load
+        startNewGame();
+    </script>
+</body>
+</html>

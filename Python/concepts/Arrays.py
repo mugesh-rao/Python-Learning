@@ -1,3 +1,6 @@
-arrays = [1,2,3,4,5,66,7,9]
-arrays[5] = 56
-print(arrays[0])
+i = 1
+
+while i < 15:
+  print(i)
+  print("--------")
+  i = i + 2
