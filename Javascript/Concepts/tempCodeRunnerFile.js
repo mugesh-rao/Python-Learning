@@ -1,0 +1,1 @@
+console.log("Index of 30:", index);
