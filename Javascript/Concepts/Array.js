@@ -17,7 +17,6 @@ function reverseArray(arr) {
   return arr;
 }
 
-
 // Example
 //   console.log(reverseArray(arr1));
 
@@ -45,3 +44,31 @@ function MaxProduct(arr) {
   return arr[0] * arr[1];
 }
 // console.log(MaxProduct(arr1, arr2));
+
+function FindMaxMin(arr) {
+  let max = arr[0];
+  let min = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) {
+      max = arr[i];
+    } else if (arr[i] < min) {
+      min = arr[i];
+    }
+  }
+  return { max, min };
+}
+// console.log(FindMaxMin(arr1))
+
+function Find2Largest(arr) {
+  for (let i = 0; i < arr.length; i++) {
+    if (i < arr[i]) {
+      console.log(arr[i] - 1);
+    }
+  }
+}
+
+// console.log(Find2Largest(arr1))
+
+
+
+
