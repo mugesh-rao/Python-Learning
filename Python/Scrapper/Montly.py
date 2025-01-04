@@ -2,8 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from urllib.parse import urlparse
+
+import os
 # Base URL of the website
-base_url = 'https://www.gktoday.in/quizbase/current-affairs-quiz-december-2024?pageno='
+base_url = 'https://www.gktoday.in/quizbase/current-affairs-quiz-june-2024?pageno='
 
 quiz_data = []
 
@@ -35,7 +37,7 @@ while True:
     for block in quiz_blocks:
         # Extract the question
         question = block.find('div', class_='wp_quiz_question').text.strip()
-        
+        question = ' '.join(question.split()[1:]).strip()
         # Extract the options (which are in one string)
         options_str = block.find('div', class_='wp_quiz_question_options').text.strip()
         
@@ -74,11 +76,15 @@ while True:
     # Move to the next page
     page_num += 1
 
-# Convert the data into a pandas DataFrame
 df = pd.DataFrame(quiz_data)
+# Check if the file exists and create a new name if needed
 file_name = f'{url_part}.xlsx'
-df.to_excel(file_name, index=False)
+file_count = 1
+while os.path.exists(file_name):
+    file_name = f'{url_part}_{file_count}.xlsx'
+    file_count += 1
+
 # Export the data to an Excel file
-df.to_excel('scraped_quiz_data_separated_options.xlsx', index=False)
+df.to_excel(file_name, index=False)
 
 print("Data scraped and exported to 'scraped_quiz_data_separated_options.xlsx' successfully.")
