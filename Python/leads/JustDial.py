@@ -1,7 +1,7 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-import csv
+import pandas as pd
 import logging
 from typing import Dict, List
 from datetime import datetime
@@ -65,17 +65,15 @@ class JustDialScraper:
 
         return results
 
-    def save_to_csv(self, data: List[Dict[str, str]], filename: str):
-        """Save the scraped data to a CSV file inside 'Just Data' folder."""
+    def save_to_excel(self, data: List[Dict[str, str]], filename: str):
+        """Save the scraped data to an Excel file inside 'Just Data' folder."""
         try:
             file_path = os.path.join('Just Data', filename)  # Save inside 'Just Data' folder
-            with open(file_path, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=['name', 'phone'])
-                writer.writeheader()
-                writer.writerows(data)
+            df = pd.DataFrame(data)
+            df.to_excel(file_path, index=False, engine='openpyxl')
             logging.info(f"Data saved to {file_path}")
         except Exception as e:
-            logging.error(f"Error saving to CSV: {e}")
+            logging.error(f"Error saving to Excel: {e}")
 
     def scrape_multiple_pages(self, base_url: str, start_page: int = 1, end_page: int = 20):
         """Scrape multiple pages from JustDial."""
@@ -87,9 +85,9 @@ class JustDialScraper:
             all_data.extend(page_data)
 
             # Dynamically create a filename with timestamp to avoid permission conflicts
-            filename = f"hotels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            filename = f"hotels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
             if all_data:
-                self.save_to_csv(all_data, filename)
+                self.save_to_excel(all_data, filename)
 
         logging.info(f"Scraping completed. Data saved to {filename}")
 
@@ -104,8 +102,8 @@ def main():
         logging.error(f"Error occurred during scraping: {e}")
         logging.info("Saving whatever data has been scraped so far.")
         # Save whatever data has been scraped up until the point of failure
-        filename = f"partial_hotels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        scraper.save_to_csv([], filename)
+        filename = f"partial_hotels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        scraper.save_to_excel([], filename)
 
 if __name__ == "__main__":
     main()
