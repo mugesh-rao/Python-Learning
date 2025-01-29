@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import csv
 import logging
 from typing import Dict, List
+from datetime import datetime
 
 class JustDialScraper:
     def __init__(self):
@@ -30,10 +31,11 @@ class JustDialScraper:
         """Extract phone number from the element."""
         try:
             call_element = element.find('span', {'class': 'callcontent'})
-            return call_element.text.strip() if call_element else "Phone not found"
+            phone = call_element.text.strip() if call_element else "Phone not found"
+            return phone if phone.lower() != "show number" else None  # Ignore "Show Number"
         except Exception as e:
             logging.error(f"Error extracting phone: {e}")
-            return "Error extracting phone"
+            return None  # Skip this entry
 
     def scrape_page(self, url: str) -> List[Dict[str, str]]:
         """Scrape a single JustDial page."""
@@ -48,16 +50,17 @@ class JustDialScraper:
         results = []
 
         for listing in listings:
-            business_data = {
-                'name': self.extract_name(listing),
-                'phone': self.extract_phone(listing)
-            }
-            results.append(business_data)
-            logging.info(f"Scraped: {business_data['name']}")
+            name = self.extract_name(listing)
+            phone = self.extract_phone(listing)
+
+            if phone:  # Skip if phone number is "Show Number"
+                business_data = {'name': name, 'phone': phone}
+                results.append(business_data)
+                logging.info(f"Scraped: {business_data['name']}")
 
         return results
 
-    def save_to_csv(self, data: List[Dict[str, str]], filename: str = "hotels.csv"):
+    def save_to_csv(self, data: List[Dict[str, str]], filename: str):
         """Save the scraped data to a CSV file."""
         try:
             with open(filename, 'w', newline='', encoding='utf-8') as f:
@@ -77,13 +80,26 @@ class JustDialScraper:
             page_data = self.scrape_page(url)
             all_data.extend(page_data)
 
-        self.save_to_csv(all_data)
+            # Dynamically create a filename with timestamp to avoid permission conflicts
+            filename = f"hotels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            if all_data:
+                self.save_to_csv(all_data, filename)
+
+        logging.info(f"Scraping completed. Data saved to {filename}")
 
 
 def main():
     base_url = "https://www.justdial.com/Chennai/Hotels/nct-10255012"
     scraper = JustDialScraper()
-    scraper.scrape_multiple_pages(base_url, start_page=1, end_page=20)
+    
+    try:
+        scraper.scrape_multiple_pages(base_url, start_page=1, end_page=20)
+    except Exception as e:
+        logging.error(f"Error occurred during scraping: {e}")
+        logging.info("Saving whatever data has been scraped so far.")
+        # Save whatever data has been scraped up until the point of failure
+        filename = f"partial_hotels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        scraper.save_to_csv([], filename)
 
 if __name__ == "__main__":
     main()
