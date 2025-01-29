@@ -85,7 +85,7 @@ class JustDialScraper:
             all_data.extend(page_data)
 
             # Dynamically create a filename with timestamp to avoid permission conflicts
-            filename = f"hotels_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            filename = f"data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
             if all_data:
                 self.save_to_excel(all_data, filename)
 
@@ -93,7 +93,7 @@ class JustDialScraper:
 
 
 def main():
-    base_url = "https://www.justdial.com/Chennai/Hotels/nct-10255012"
+    base_url = "https://www.justdial.com/Cuddalore/Tnpsc-Coaching-Centres/nct-11605446"
     scraper = JustDialScraper()
     
     try:
