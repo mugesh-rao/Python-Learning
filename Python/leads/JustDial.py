@@ -1,3 +1,4 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 import csv
@@ -18,6 +19,10 @@ class JustDialScraper:
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
 
+        # Ensure the 'Just Data' folder exists
+        if not os.path.exists('Just Data'):
+            os.makedirs('Just Data')
+        
     def extract_name(self, element) -> str:
         """Extract business name from the element."""
         try:
@@ -61,13 +66,14 @@ class JustDialScraper:
         return results
 
     def save_to_csv(self, data: List[Dict[str, str]], filename: str):
-        """Save the scraped data to a CSV file."""
+        """Save the scraped data to a CSV file inside 'Just Data' folder."""
         try:
-            with open(filename, 'w', newline='', encoding='utf-8') as f:
+            file_path = os.path.join('Just Data', filename)  # Save inside 'Just Data' folder
+            with open(file_path, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.DictWriter(f, fieldnames=['name', 'phone'])
                 writer.writeheader()
                 writer.writerows(data)
-            logging.info(f"Data saved to {filename}")
+            logging.info(f"Data saved to {file_path}")
         except Exception as e:
             logging.error(f"Error saving to CSV: {e}")
 
