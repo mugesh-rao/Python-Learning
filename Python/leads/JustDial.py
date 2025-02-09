@@ -93,11 +93,11 @@ class JustDialScraper:
 
 
 def main():
-    base_url = "https://www.justdial.com/Cuddalore/Tnpsc-Coaching-Centres/nct-11605446"
+    base_url = "https://www.justdial.com/Chennai/Hotels-in-Nandanam-Extension/nct-10255012"
     scraper = JustDialScraper()
     
     try:
-        scraper.scrape_multiple_pages(base_url, start_page=1, end_page=20)
+        scraper.scrape_multiple_pages(base_url, start_page=1, end_page=40)
     except Exception as e:
         logging.error(f"Error occurred during scraping: {e}")
         logging.info("Saving whatever data has been scraped so far.")
