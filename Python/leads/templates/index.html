@@ -3,32 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk WhatsApp Sender</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>JustDial Scraper</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .progress-bar {
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <h1 class="text-3xl font-bold text-center mb-8 text-blue-600">
+                JustDial Data Scraper
+            </h1>
 
-<div class="container">
-    <h1 class="mt-5">Bulk WhatsApp Sender</h1>
-    
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="alert alert-info mt-3">
-                {{ messages[0] }}
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <form id="scraperForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">JustDial URL</label>
+                        <input type="text" id="url" required
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                            placeholder="https://www.justdial.com/Chennai/Hotels...">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Start Page</label>
+                            <input type="number" id="startPage" value="1" min="1"
+                                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">End Page</label>
+                            <input type="number" id="endPage" value="20" min="1"
+                                class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
+                        Start Scraping
+                    </button>
+                </form>
             </div>
-        {% endif %}
-    {% endwith %}
-    
-    <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="file">Upload Excel File</label>
-            <input type="file" class="form-control-file" id="file" name="file" required>
-        </div>
-        
-        <button type="submit" class="btn btn-primary mt-3">Send Messages</button>
-    </form>
-</div>
 
+            <div id="statusPanel" class="bg-white rounded-lg shadow-lg p-6 hidden">
+                <h2 class="text-xl font-semibold mb-4">Scraping Status</h2>
+                <div class="mb-4">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        Progress: <span id="progressText">0%</span>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Records collected: <span id="recordsCount">0</span>
+                </div>
+                <div id="errorMessage" class="mt-4 text-red-600 hidden"></div>
+            </div>
+
+            <div id="downloadPanel" class="bg-white rounded-lg shadow-lg p-6 mt-6 hidden">
+                <h2 class="text-xl font-semibold mb-4">Download Results</h2>
+                <button onclick="downloadResults()"
+                    class="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-200">
+                    Download Excel File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('scraperForm');
+        const statusPanel = document.getElementById('statusPanel');
+        const downloadPanel = document.getElementById('downloadPanel');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const recordsCount = document.getElementById('recordsCount');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                url: document.getElementById('url').value,
+                start_page: document.getElementById('startPage').value,
+                end_page: document.getElementById('endPage').value
+            };
+
+            try {
+                const response = await fetch('/start_scraping', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    statusPanel.classList.remove('hidden');
+                    startStatusCheck();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        async function startStatusCheck() {
+            const checkStatus = async () => {
+                try {
+                    const response = await fetch('/status');
+                    const data = await response.json();
+                    
+                    const progress = (data.progress / data.total_pages) * 100;
+                    progressBar.style.width = `${progress}%`;
+                    progressText.textContent = `${Math.round(progress)}% (Page ${data.progress} of ${data.total_pages})`;
+                    recordsCount.textContent = data.results_count;
+
+                    // Handle errors
+                    const errorDiv = document.getElementById('errorMessage');
+                    if (data.error) {
+                        errorDiv.textContent = `Error: ${data.error}`;
+                        errorDiv.classList.remove('hidden');
+                    } else {
+                        errorDiv.classList.add('hidden');
+                    }
+
+                    if (data.is_running) {
+                        setTimeout(checkStatus, 1000);
+                    } else if (data.latest_file) {
+                        downloadPanel.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error checking status:', error);
+                    document.getElementById('errorMessage').textContent = 'Error checking status: ' + error.message;
+                    document.getElementById('errorMessage').classList.remove('hidden');
+                }
+            };
+
+            checkStatus();
+        }
+
+        async function downloadResults() {
+            try {
+                const response = await fetch('/download_latest');
+                if (response.ok) {
+                    // Create a temporary link to download the file
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = response.headers.get('content-disposition')?.split('filename=')[1] || 'justdial_data.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } else {
+                    const error = await response.json();
+                    alert(`Download failed: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('Error downloading file:', error);
+                alert('Error downloading file. Please try again.');
+            }
+        }
+    </script>
 </body>
 </html>

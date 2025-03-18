@@ -3,8 +3,9 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional, Callable
 from datetime import datetime
+import time
 
 class JustDialScraper:
     def __init__(self):
@@ -42,7 +43,7 @@ class JustDialScraper:
             logging.error(f"Error extracting phone: {e}")
             return None  # Skip this entry
 
-    def scrape_page(self, url: str) -> List[Dict[str, str]]:
+    def scrape_page(self, url: str, callback: Optional[Callable] = None) -> List[Dict[str, str]]:
         """Scrape a single JustDial page."""
         response = self.session.get(url)
         
@@ -62,34 +63,83 @@ class JustDialScraper:
                 business_data = {'name': name, 'phone': phone}
                 results.append(business_data)
                 logging.info(f"Scraped: {business_data['name']}")
+                
+                # Call the callback function if provided
+                if callback:
+                    callback(business_data)
 
         return results
 
     def save_to_excel(self, data: List[Dict[str, str]], filename: str):
         """Save the scraped data to an Excel file inside 'Just Data' folder."""
         try:
-            file_path = os.path.join('Just Data', filename)  # Save inside 'Just Data' folder
+            # Get the absolute path of the current script
+            base_dir = os.path.abspath(os.path.dirname(__file__))
+            data_dir = os.path.join(base_dir, 'Just Data')
+            
+            # Ensure the directory exists
+            if not os.path.exists(data_dir):
+                os.makedirs(data_dir)
+            
+            file_path = os.path.join(data_dir, filename)
             df = pd.DataFrame(data)
-            df.to_excel(file_path, index=False, engine='openpyxl')
+            
+            # Create Excel writer with xlsxwriter engine
+            with pd.ExcelWriter(file_path, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='JustDial Data')
+                
+                # Auto-adjust column widths
+                worksheet = writer.sheets['JustDial Data']
+                for idx, col in enumerate(df.columns):
+                    max_length = max(
+                        df[col].astype(str).apply(len).max(),
+                        len(col)
+                    )
+                    worksheet.column_dimensions[chr(65 + idx)].width = max_length + 2
+            
             logging.info(f"Data saved to {file_path}")
+            return file_path
+            
         except Exception as e:
             logging.error(f"Error saving to Excel: {e}")
+            raise
 
-    def scrape_multiple_pages(self, base_url: str, start_page: int = 1, end_page: int = 20):
+    def scrape_multiple_pages(self, base_url: str, start_page: int = 1, end_page: int = 20, callback: Optional[Callable] = None):
         """Scrape multiple pages from JustDial."""
         all_data = []
-        for page in range(start_page, end_page + 1):
-            url = f"{base_url}/page-{page}"
-            logging.info(f"Scraping {url}")
-            page_data = self.scrape_page(url)
-            all_data.extend(page_data)
+        try:
+            for page in range(start_page, end_page + 1):
+                url = f"{base_url}/page-{page}"
+                logging.info(f"Scraping page {page} of {end_page}")
+                
+                # Scrape the page and get data
+                page_data = self.scrape_page(url)
+                all_data.extend(page_data)
+                
+                # Call callback with current progress if provided
+                if callback:
+                    callback({
+                        'current_page': page,
+                        'total_pages': end_page,
+                        'page_data': page_data,
+                        'total_records': len(all_data)
+                    })
+                
+                # Add a small delay between pages
+                time.sleep(2)
 
-            # Dynamically create a filename with timestamp to avoid permission conflicts
-            filename = f"data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            # Save final results only once
             if all_data:
-                self.save_to_excel(all_data, filename)
-
-        logging.info(f"Scraping completed. Data saved to {filename}")
+                filename = f"justdial_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                return self.save_to_excel(all_data, filename)
+            
+        except Exception as e:
+            logging.error(f"Error during multi-page scraping: {e}")
+            # Save partial data if we have any
+            if all_data:
+                filename = f"partial_justdial_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                return self.save_to_excel(all_data, filename)
+            raise
 
 
 def main():
