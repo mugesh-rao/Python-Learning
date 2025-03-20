@@ -24,7 +24,7 @@ def send_whatsapp_message(name, mobile):
     
     formatted_mobile = str(mobile).replace(" ", "").lstrip("0")  # Format mobile number
     print(formatted_mobile)
-    api_url = f"https://api.textmebot.com/send.php?recipient=+91{formatted_mobile}&apikey=xqVoHxJtM417&text={requests.utils.quote(message)}"
+    api_url = f"https://api.textmebot.com/send.php?recipient=+91{formatted_mobile}&apikey=xqVoHxJtM&text={requests.utils.quote(message)}"
     
     try:
         response = requests.get(api_url)
