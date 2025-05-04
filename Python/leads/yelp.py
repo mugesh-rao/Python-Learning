@@ -4,12 +4,24 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import logging
 from datetime import datetime
+import random
 
 class YelpScraper:
     def __init__(self):
         self.session = requests.Session()
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.3.8 (KHTML, like Gecko) Version/10.1.2 Safari/603.3.8',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36'
+        ]
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': random.choice(self.user_agents),
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
         })
 
         # Setup logging
@@ -58,7 +70,7 @@ class YelpScraper:
         """Scrape a single Yelp search results page."""
         logging.info(f"🔍 Fetching: {url}")
         response = self.session.get(url)
-        
+
         if response.status_code != 200:
             logging.error(f"❌ Failed to fetch {url} (Status Code: {response.status_code})")
             return []
@@ -98,7 +110,7 @@ class YelpScraper:
 def main():
     url = "https://www.yelp.com/search?find_desc=Car+Dealers&find_loc=San+Francisco%2C+CA"
     scraper = YelpScraper()
-    
+
     data = scraper.scrape_page(url)
     scraper.save_to_excel(data)
 

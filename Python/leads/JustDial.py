@@ -143,7 +143,7 @@ class JustDialScraper:
 
 
 def main():
-    base_url = "https://www.justdial.com/Chennai/Hotels-in-Nandanam-Extension/nct-10255012"
+    base_url = "https://www.justdial.com/Ernakulam/Schools-in-Kureekad/nct-10422444"
     scraper = JustDialScraper()
     
     try:
